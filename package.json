@@ -78,7 +78,7 @@
     "jsonschema": "^1.2.2",
     "jwt-decode": "^2.2.0",
     "linkify-it": "^2.0.3",
-    "markdown-it": "^8.4.2",
+    "markdown-it": "^12.3.2",
     "moving-average": "^1.0.0",
     "naf-janus-adapter": "^3.0.17",
     "networked-aframe": "github:mozillareality/networked-aframe#master",
