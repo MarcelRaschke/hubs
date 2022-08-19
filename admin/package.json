@@ -15,7 +15,9 @@
     "lint:js": "eslint '*.js' 'src/**/*.js'",
     "lint:html": "htmlhint 'src/**/*.html'",
     "lint": "npm run lint:js && npm run lint:html",
-    "test": "npm run lint && npm run build"
+    "test": "npm run lint && npm run build",
+    "prepublish": "npm run snyk-protect",
+    "snyk-protect": "snyk-protect"
   },
   "dependencies": {
     "@iarna/toml": "^2.2.3",
@@ -26,7 +28,8 @@
     "react-admin": "^2.6.3",
     "react-dom": "^16.1.1",
     "react-intl": "^2.4.0",
-    "three": "github:mozillareality/three.js#hubs/master"
+    "three": "github:mozillareality/three.js#hubs/master",
+    "@snyk/protect": "latest"
   },
   "devDependencies": {
     "@babel/core": "^7.3.3",
@@ -40,9 +43,9 @@
     "babel-loader": "^8.0.5",
     "babel-plugin-react-intl": "^3.0.1",
     "babel-plugin-transform-react-jsx-img-import": "^0.1.4",
-    "copy-webpack-plugin": "^4.5.1",
+    "copy-webpack-plugin": "^5.1.2",
     "cors": "^2.8.4",
-    "css-loader": "^1.0.0",
+    "css-loader": "^2.0.0",
     "dotenv": "^5.0.1",
     "eslint": "^5.16.0",
     "eslint-config-prettier": "^2.9.0",
@@ -50,22 +53,23 @@
     "eslint-plugin-react": "^7.10.0",
     "esm": "^3.2.5",
     "file-loader": "^1.1.10",
-    "html-loader": "^0.5.5",
-    "html-webpack-plugin": "^3.1.0",
-    "htmlhint": "^0.11.0",
+    "html-loader": "^1.0.0",
+    "html-webpack-plugin": "^4.0.0",
+    "htmlhint": "^0.16.2",
     "mini-css-extract-plugin": "^0.8.0",
-    "node-sass": "^4.12.0",
+    "node-sass": "^7.0.1",
     "prettier": "^1.7.0",
     "raw-loader": "^0.5.1",
     "rimraf": "^2.6.2",
     "sass-loader": "^6.0.7",
-    "selfsigned": "^1.10.2",
-    "shelljs": "^0.8.1",
+    "selfsigned": "^1.10.13",
+    "shelljs": "^0.8.5",
     "style-loader": "^0.20.2",
     "url-loader": "^1.0.1",
     "webpack": "^4.32.2",
     "webpack-cli": "^3.2.3",
-    "webpack-dev-server": "^3.1.14",
+    "webpack-dev-server": "^4.0.0",
     "worker-loader": "^2.0.0"
-  }
+  },
+  "snyk": true
 }
