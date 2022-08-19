@@ -1,0 +1,101 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.25.0
+ignore: {}
+# patches apply the minimum changes required to fix a vulnerability
+patch:
+  SNYK-JS-LODASH-567746:
+    - '@babel/register > lodash':
+        patched: '2022-08-19T01:04:42.837Z'
+    - babel-plugin-transform-react-jsx-img-import > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - eslint > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - html-webpack-plugin > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - stylelint > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - stylelint-scss > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - webpack-bundle-analyzer > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - '@babel/preset-env > @babel/plugin-transform-block-scoping > lodash':
+        patched: '2022-08-19T01:04:42.837Z'
+    - babel-eslint > @babel/traverse > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - ava > @babel/core > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - babel-plugin-transform-react-jsx-img-import > babel-types > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - eslint > inquirer > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - eslint > table > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - stylelint > table > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - htmlhint > async > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - htmlhint > jshint > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - node-sass > sass-graph > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - stylelint > postcss-reporter > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - webpack-dev-server > http-proxy-middleware > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - '@babel/preset-env > @babel/plugin-transform-modules-umd > @babel/helper-module-transforms > lodash':
+        patched: '2022-08-19T01:04:42.837Z'
+    - babel-eslint > @babel/traverse > @babel/generator > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - stylelint > postcss-jsx > @babel/core > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - ava > @babel/core > @babel/traverse > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - jsdom > request-promise-native > request-promise-core > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - node-sass > gaze > globule > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - '@babel/preset-env > @babel/plugin-transform-parameters > @babel/helper-call-delegate > @babel/traverse > lodash':
+        patched: '2022-08-19T01:04:42.837Z'
+    - babel-eslint > @babel/traverse > @babel/helper-split-export-declaration > @babel/types > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - stylelint > postcss-jsx > @babel/core > @babel/traverse > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - ava > @ava/babel-preset-transform-test-files > babel-plugin-espower > @babel/generator > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - ava > @babel/core > @babel/helpers > @babel/traverse > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - '@babel/preset-env > @babel/plugin-transform-exponentiation-operator > @babel/helper-builder-binary-assignment-operator-visitor > @babel/helper-explode-assignable-expression > @babel/traverse > lodash':
+        patched: '2022-08-19T01:04:42.837Z'
+    - stylelint > postcss-jsx > @babel/core > @babel/helpers > @babel/traverse > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - ava > @ava/babel-preset-transform-test-files > babel-plugin-espower > @babel/generator > @babel/types > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - babel-eslint > @babel/traverse > @babel/helper-function-name > @babel/helper-get-function-arity > @babel/types > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - ava > @babel/core > @babel/helpers > @babel/traverse > @babel/generator > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - stylelint > postcss-jsx > @babel/core > @babel/helpers > @babel/traverse > @babel/generator > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - '@babel/preset-env > @babel/plugin-transform-exponentiation-operator > @babel/helper-builder-binary-assignment-operator-visitor > @babel/helper-explode-assignable-expression > @babel/traverse > @babel/generator > lodash':
+        patched: '2022-08-19T01:04:42.837Z'
+    - ava > @babel/core > @babel/helpers > @babel/traverse > @babel/helper-split-export-declaration > @babel/types > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - stylelint > postcss-jsx > @babel/core > @babel/helpers > @babel/traverse > @babel/helper-split-export-declaration > @babel/types > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - '@babel/preset-env > @babel/plugin-transform-exponentiation-operator > @babel/helper-builder-binary-assignment-operator-visitor > @babel/helper-explode-assignable-expression > @babel/traverse > @babel/helper-split-export-declaration > @babel/types > lodash':
+        patched: '2022-08-19T01:04:42.837Z'
+    - ava > @ava/babel-preset-stage-4 > @babel/plugin-transform-exponentiation-operator > @babel/helper-builder-binary-assignment-operator-visitor > @babel/helper-explode-assignable-expression > @babel/traverse > @babel/generator > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - ava > @ava/babel-preset-stage-4 > @babel/plugin-transform-exponentiation-operator > @babel/helper-builder-binary-assignment-operator-visitor > @babel/helper-explode-assignable-expression > @babel/traverse > @babel/helper-split-export-declaration > @babel/types > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - stylelint > postcss-jsx > @babel/core > @babel/helpers > @babel/traverse > @babel/helper-function-name > @babel/helper-get-function-arity > @babel/types > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - '@babel/preset-env > @babel/plugin-transform-exponentiation-operator > @babel/helper-builder-binary-assignment-operator-visitor > @babel/helper-explode-assignable-expression > @babel/traverse > @babel/helper-function-name > @babel/helper-get-function-arity > @babel/types > lodash':
+        patched: '2022-08-19T01:04:42.837Z'
+    - ava > @ava/babel-preset-stage-4 > @babel/plugin-transform-exponentiation-operator > @babel/helper-builder-binary-assignment-operator-visitor > @babel/helper-explode-assignable-expression > @babel/traverse > @babel/helper-function-name > @babel/helper-get-function-arity > @babel/types > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+    - node-sass > lodash:
+        patched: '2022-08-19T01:04:42.837Z'
+  'npm:minimatch:20160620':
+    - spritesheet.js > glob > minimatch:
+        patched: '2022-08-19T01:04:42.837Z'
