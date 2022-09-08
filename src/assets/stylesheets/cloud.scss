@@ -1,264 +1,118 @@
-@import 'root-vars';
-@import 'shared';
-@import 'loader';
+@use "../../react-components/styles/theme.scss";
 
-$breakpoint: 2000px;
-$narrow-breakpoint: 700px;
-$mobile-breakpoint-width: 450px;
+:local(.hero) {
+  background-color: theme.$background2-color;
 
-body {
-  @extend %default-font;
-  background: var(--home-background-color);
-  color: var(--home-text-color);
-  margin: 0;
-}
-
-:local(.bg) {
-  background: var(--home-background-color);
-  top: 0;
-  left: 0;
-  position: absolute;
-  width: 100vw;
-  height: 100vh;
-  z-index: -2;
-}
-
-:local(.ui) {
-  display: flex;
-  position: relative;
-  flex-direction: column;
-}
-
-:local(.content) {
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - 72px);
-  align-items: center;
-  justify-content: center;
-}
-
-:local(.header) {
-  font-size: 1.1em;
-  font-weight: bold;
-  color: var(--home--header-link-color);
-}
-
-:local(.header-links) {
-  display: flex;
-  margin: 24px 12px 0px 12px;
-
-  @media(max-width: $mobile-breakpoint-width) {
-    justify-content: space-between;
+  h1 {
+    margin-bottom: 20px;
   }
 
-  a {
-    color: var(--home--header-link-color);
-    text-decoration: none;
-    margin: 0px 18px;
+  iframe {
+    margin-bottom: 20px;
+  }
+
+  & > section {
+    display: flex; 
+    padding: 32px;
   }
 }
 
-:local(.hero-pane) {
-  display: flex;
-  height: 100%;
-  position: relative;
-  justify-content: center;
-  align-items: center;
+:local(.hero-media) {
+  flex: 8;
 
-  @media(max-width: $breakpoint) {
-    flex-direction: column;
-  }
-
-  @media(max-width: $narrow-breakpoint) {
+  & > * {
+    height: 240px;
     width: 100%;
+
+    @media(min-width: theme.$breakpoint-sm) {
+      height: 300px;
+    }
+
+    @media(min-width: theme.$breakpoint-md) {
+      height: 360px;
+    }
+
+    @media(min-width: theme.$breakpoint-lg) {
+      height: 100%;
+    }
+  }
+
+  @media(min-width: theme.$breakpoint-lg) {
+    margin-right: 40px;
   }
 }
 
-:local(.cloud-logo) {
-  position: relative;
+:local(.hero-content) {
+  flex: 10;
+
+  & > * {
+    margin-bottom: theme.$spacing-md;
+  }
+
+  & > :last-child {
+    margin-bottom: 0;
+  }
+}
+
+:local(.features) {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30vw;
+  padding: 5px;
+  
+  & > * {
+    margin: theme.$spacing-md;
+  }
 
-  @media(max-width: $narrow-breakpoint) {
-    width: 320px;
-
-    img {
-      width: 100%;
+  :local(.center) {
+    & > * {
+      margin-bottom: theme.$spacing-md;
+    }
+  
+    & > :last-child {
+      margin-bottom: 0;
     }
   }
 }
 
-:local(.primary-tagline) {
-  width: 90%;
-  text-align: left;
-  font-weight: lighter;
-  font-size: 1.5em;
-  white-space: pre;
-  margin-top: 32px;
-  margin-left: 12px;
-  margin-right: 12px;
-
-  @media(max-width: $mobile-breakpoint-width) {
-    font-size: 1.3em;
-  }
-
-  @media(max-width: $narrow-breakpoint) {
-    text-align: center;
-    white-space: normal;
-  }
-}
-
-:local(.secondary-tagline) {
-  width: 90%;
-  text-align: left;
-  font-weight: lighter;
-  font-size: 1.5em;
-  margin-top: 48px;
-  margin-left: 12px;
-  margin-right: 12px;
-
-  @media(max-width: $mobile-breakpoint-width) {
-    font-size: 1.3em;
-  }
-
-  @media(max-width: $narrow-breakpoint) {
-    text-align: center;
-  }
-}
-
-:local(.hero-message) {
-  width: 620px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  margin: 0 36px;
-
-  @media(max-width: $breakpoint) {
-    order: 2;
-    width: 100%;
-    margin: 32px 0;
-    height: auto;
-  }
-}
-
-:local(.hero-splash) {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  position: relative;
-  margin: 0 32px;
-  flex: 1;
-  z-index: -1;
-  border-radius: 8px;
-
-  image {
-    width: 80%;
-  }
-
-  @media(max-width: $breakpoint) {
+// Utility Classes
+:local(.hide-lg-down) {
+  @media(max-width: theme.$breakpoint-lg) {
     display: none;
   }
+}
 
-  :local(.splash-tagline) {
-    position: absolute;
-    bottom: -40px;
-    right: 10%;
-    width: 75%;
-    text-align: center;
-    color: var(--discord-subtitle-color);
+:local(.hide-lg-up) {
+  @media(min-width: theme.$breakpoint-lg) {
+    display: none;
   }
 }
 
-:local(.preview-video) {
-  width: 90%;
-  border-radius: 12px 0 0 12px;
-  z-index: -1;
+:local(.row) {
+  display: flex;
+  justify-content: space-evenly !important;
+
+  & > * {
+    margin: theme.$spacing-sm;
+  }
 }
 
-:local(.download-button) {
-  @extend %action-button;
-  @extend %wide-button;
-  height: 64px;
-  border-radius: 4px;
+:local(.col-lg) {
+  flex-direction: column;
 
-  background-color: $action-color;
-  margin-top: 32px;
+  @media(min-width: theme.$breakpoint-lg) {
+    flex-direction: row;
+  }
+}
+
+:local(.center) {
   display: flex;
   flex-direction: column;
-  font-size: 1.2em;
-}
-
-:local(.doc-link) {
-  a {
-    color: black;
-    font-weight: bold;
-  }
-
-  margin-top: 24px;
-}
-
-:local(.tutorial-buttons) {
-  margin-top: 64px;
-
-  button {
-    margin: 32px auto;
-  }
-}
-
-:local(.thank-you) {
+  align-items: center;
   text-align: center;
-
-  a {
-    color: var(--discord-secondary-text-color);
-  }
 }
 
-:local(.player-overlay) {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: var(--lightbox-background-color);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-:local(.player-content) {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-:local(.player-video) {
-  width: 960px;
-  height: 540px;
-
-  @media (max-width: 980px), (max-height: 760px) {
-    width: 640px;
-    height: 360px;
+:local(.center-lg) {
+  @media(max-width: theme.$breakpoint-lg) {
+    text-align: center;
+    align-items: center;
   }
-
-  @media (max-width: 650px), (max-height: 580px) {
-    width: 480px;
-    height: 270px;
-  }
-
-  @media (max-width: 490px), (max-height: 480px) {
-    width: 320px;
-    height: 180px;
-  }
-}
-
-:local(.attribution) {
-  position: absolute;
-  bottom: -40px;
-  right: 84px;
-  color: var(--discord-secondary-action-color);
 }

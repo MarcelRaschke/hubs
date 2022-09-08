@@ -1,6 +1,9 @@
+import { isTagged } from "../components/tags";
+
 function getSpecificHoverMenu(el) {
   return (
     el &&
+    el.components &&
     (el.components["hover-menu"] ||
       el.components["hover-menu__video"] ||
       el.components["hover-menu__pager"] ||
@@ -13,14 +16,16 @@ function getSpecificHoverMenu(el) {
 function findHoverMenu(hovered) {
   if (!hovered) return null;
   const hoverMenu = getSpecificHoverMenu(hovered);
+  // console.log("hoverMenu", hoverMenu);
   if (hoverMenu) {
     return hoverMenu;
   }
-  if (!(hovered.components.tags && hovered.components.tags.data.isHoverMenuChild)) {
+  if (!isTagged(hovered, "isHoverMenuChild")) {
+    // console.log("not a hover menu child, aborting", hovered);
     return null;
   }
   let el = hovered.parentNode;
-  while (!getSpecificHoverMenu(el)) {
+  while (el && !getSpecificHoverMenu(el)) {
     el = el.parentNode;
   }
   return getSpecificHoverMenu(el);

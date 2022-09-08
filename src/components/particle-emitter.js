@@ -1,4 +1,4 @@
-import { ParticleEmitter } from "@mozillareality/three-particle-emitter";
+import { ParticleEmitter } from "lib-hubs/packages/three-particle-emitter/lib/esm/index";
 import { textureLoader } from "../utils/media-utils";
 import { resolveUrl } from "../utils/media-utils";
 import { proxiedUrlFor } from "../utils/media-url-utils";
@@ -57,9 +57,7 @@ AFRAME.registerComponent("particle-emitter", {
       accessibleUrl = proxiedUrlFor(canonicalUrl);
     }
 
-    const texture = new THREE.Texture();
-
-    await textureLoader.loadTextureAsync(texture, accessibleUrl);
+    const texture = await textureLoader.loadAsync(accessibleUrl);
 
     // Guard against src changing while request was in flight
     if (this.data.src !== src) {

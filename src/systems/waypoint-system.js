@@ -2,7 +2,7 @@ import { setMatrixWorld, affixToWorldUp } from "../utils/three-utils";
 import { isTagged } from "../components/tags";
 import { applyPersistentSync } from "../utils/permissions-utils";
 import { waitForDOMContentLoaded } from "../utils/async-utils";
-const calculateIconTransform = (function() {
+const calculateIconTransform = (function () {
   const up = new THREE.Vector3();
   const backward = new THREE.Vector3();
   const forward = new THREE.Vector3();
@@ -28,10 +28,7 @@ const calculateIconTransform = (function() {
     } else {
       scale = 0.1 + 0.05 * distance;
     }
-    forward
-      .copy(camToWaypoint)
-      .projectOnPlane(up.set(0, 1, 0))
-      .normalize();
+    forward.copy(camToWaypoint).projectOnPlane(up.set(0, 1, 0)).normalize();
 
     return outMat4
       .makeBasis(
@@ -121,6 +118,9 @@ export class WaypointSystem {
     this.scene = scene;
     this.loading = [];
     this.ready = [];
+    this.previousWaypointHash = null;
+    this.initialSpawnHappened = false;
+
     this.waypointForTemplateEl = {};
     this.elementsFromTemplatesFor = {};
     this.eventHandlers = [];
@@ -143,14 +143,7 @@ export class WaypointSystem {
 
   teleportToWaypoint(iconEl, waypointComponent) {
     return function onInteract() {
-      this.releaseAnyOccupiedWaypoints();
-      waypointComponent.el.object3D.updateMatrices();
-      this.characterController.shouldLandWhenPossible = true;
-      this.characterController.enqueueWaypointTravelTo(
-        waypointComponent.el.object3D.matrixWorld,
-        false,
-        waypointComponent.data
-      );
+      this.moveToWaypoint(waypointComponent, false);
     }.bind(this);
   }
   tryTeleportToOccupiableWaypoint(iconEl, waypointComponent) {
@@ -302,19 +295,25 @@ export class WaypointSystem {
         this.nextMoveToSpawnResolve = resolve;
       });
     }
+    // Reset system state to allow for waypoint selection based on URL fragments
+    this.previousWaypointHash = null;
+    this.initialSpawnHappened = false;
     return this.nextMoveToSpawn;
+  }
+  moveToWaypoint(waypointComponent, instant) {
+    this.releaseAnyOccupiedWaypoints();
+    waypointComponent.el.object3D.updateMatrices();
+    this.characterController.shouldLandWhenPossible = true;
+    this.characterController.enqueueWaypointTravelTo(
+      waypointComponent.el.object3D.matrixWorld,
+      !window.APP.store.state.preferences.animateWaypointTransitions || instant,
+      waypointComponent.data
+    );
   }
   moveToUnoccupiableSpawnPoint() {
     const waypointComponent = this.getUnoccupiableSpawnPoint();
     if (waypointComponent) {
-      this.releaseAnyOccupiedWaypoints();
-      waypointComponent.el.object3D.updateMatrices();
-      this.characterController.shouldLandWhenPossible = true;
-      this.characterController.enqueueWaypointTravelTo(
-        waypointComponent.el.object3D.matrixWorld,
-        true,
-        waypointComponent.data
-      );
+      this.moveToWaypoint(waypointComponent, true);
     }
     return waypointComponent;
   }
@@ -323,6 +322,19 @@ export class WaypointSystem {
       this.waitOneTick = false;
       return;
     }
+
+    const hashUpdated = window.location.hash !== "" && this.previousWaypointHash !== window.location.hash;
+
+    if (hashUpdated && this.initialSpawnHappened) {
+      const waypointName = window.location.hash.replace("#", "");
+      const waypoint = this.ready.find(c => c.el.object3D.name === waypointName);
+      if (waypoint) {
+        this.moveToWaypoint(waypoint, this.previousWaypointHash === null);
+        window.history.replaceState(null, null, window.location.href.split("#")[0]); // Reset so you can re-activate the same waypoint
+      }
+      this.previousWaypointHash = window.location.hash;
+    }
+
     if (!this.currentMoveToSpawn && this.nextMoveToSpawn) {
       this.mightNeedRespawn = false;
       this.currentMoveToSpawn = this.nextMoveToSpawn;
@@ -349,6 +361,7 @@ export class WaypointSystem {
           } else if (waypointComponentOrNull === null) {
             resolvedWaypointOrNull = this.moveToUnoccupiableSpawnPoint();
           }
+          this.initialSpawnHappened = true;
           this.currentMoveToSpawnResolve(resolvedWaypointOrNull);
           this.currentMoveToSpawn = null;
           this.currentMoveToSpawnResolve = null;
@@ -365,7 +378,7 @@ export class WaypointSystem {
       ) {
         elementFromTemplate.object3D.visible = this.scene.is("frozen");
         if (elementFromTemplate.object3D.visible) {
-          this.viewingCamera = this.viewingCamera || document.getElementById("viewing-camera").object3D;
+          this.viewingCamera = this.viewingCamera || document.getElementById("viewing-camera").object3DMap.camera;
           setMatrixWorld(
             elementFromTemplate.object3D,
             calculateIconTransform(waypointComponent.el.object3D, this.viewingCamera, this.helperMat4)

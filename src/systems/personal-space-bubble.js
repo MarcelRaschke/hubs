@@ -1,8 +1,11 @@
+import { hasComponent } from "bitecs";
+import { IgnoreSpaceBubble } from "../bit-components";
 import { forEachMaterial } from "../utils/material-utils";
 import qsTruthy from "../utils/qs_truthy";
+import traverseFilteredSubtrees from "../utils/traverseFilteredSubtrees";
 
-const invaderPos = new AFRAME.THREE.Vector3();
-const bubblePos = new AFRAME.THREE.Vector3();
+const invaderPos = new THREE.Vector3();
+const bubblePos = new THREE.Vector3();
 const isDebug = qsTruthy("debug");
 const isMobileVR = AFRAME.utils.device.isMobileVR();
 
@@ -79,7 +82,7 @@ AFRAME.registerSystem("personal-space-bubble", {
     this.tickCount++;
   },
 
-  _updateInvaders: (function() {
+  _updateInvaders: (function () {
     const tempInvasionFlags = [];
 
     const setInvaderFlag = (i, invaders, bubble) => {
@@ -101,7 +104,7 @@ AFRAME.registerSystem("personal-space-bubble", {
       }
     };
 
-    return function() {
+    return function () {
       if (!this.data.enabled) return;
       if (this.invaders.length === 0) return;
 
@@ -151,26 +154,12 @@ function createSphereGizmo(radius) {
   return line;
 }
 
-// TODO: we need to come up with a more generic way of doing this as this is very specific to our avatars.
-/**
- * Specifies a mesh associated with an invader.
- * @namespace avatar/personal-space-bubble
- * @component space-invader-mesh
- */
-AFRAME.registerComponent("space-invader-mesh", {
-  schema: {
-    meshName: { type: "string" }
-  },
-  update() {
-    this.targetMesh = this.el.object3D.getObjectByName(this.data.meshName);
-  }
-});
-
-function findInvaderMesh(entity) {
-  while (entity && !(entity.components && entity.components["space-invader-mesh"])) {
+function getGLTFModelRoot(entity) {
+  while (entity && !(entity.components && entity.components["gltf-model-plus"])) {
     entity = entity.parentNode;
   }
-  return entity && entity.components["space-invader-mesh"].targetMesh;
+
+  return entity;
 }
 
 const DEBUG_OBJ = "psb-debug";
@@ -191,12 +180,11 @@ AFRAME.registerComponent("personal-space-invader", {
   init() {
     const system = this.el.sceneEl.systems["personal-space-bubble"];
     system.registerInvader(this);
+
     if (this.data.useMaterial) {
-      const mesh = findInvaderMesh(this.el);
-      if (mesh) {
-        this.targetMesh = mesh;
-      }
+      this.gltfRootEl = getGLTFModelRoot(this.el);
     }
+
     this.invading = false;
     this.alwaysHidden = false;
   },
@@ -238,28 +226,56 @@ AFRAME.registerComponent("personal-space-invader", {
     }
 
     this.disabled = true;
-    this.updateBoneVisibility();
   },
 
   enable() {
     this.disabled = false;
     this.applyInvasionToMesh(this.invading);
-    this.updateBoneVisibility();
-  },
-
-  updateBoneVisibility() {
-    // HACK, bone visibility typically takes a tick to update, but since we want to be able
-    // to have enable() and disable() be reflected this frame, we need to do it immediately.
-    this.el.components["bone-visibility"] && this.el.components["bone-visibility"].tick();
   },
 
   applyInvasionToMesh(invading) {
     if (this.disabled) return;
 
-    if (this.targetMesh && this.targetMesh.material && !this.alwaysHidden) {
-      forEachMaterial(this.targetMesh, material => {
-        material.opacity = invading ? this.data.invadingOpacity : 1;
-        material.transparent = invading;
+    // Note: Model isn't loaded on init because this object is inflated before the root is.
+    // object3DMap.mesh is not initially set and must be checked before traversing.
+    if (this.gltfRootEl && this.gltfRootEl.object3DMap.mesh && !this.alwaysHidden) {
+      traverseFilteredSubtrees(this.gltfRootEl.object3DMap.mesh, obj => {
+        // Prevents changing the opacity of ui elements
+        if (obj.el && hasComponent(APP.world, IgnoreSpaceBubble, obj.el.eid)) {
+          // Skip all objects under this branch by returning false
+          return false;
+        }
+
+        if (!obj.material) {
+          return;
+        }
+
+        forEachMaterial(obj, material => {
+          let originalProps = material.userData.originalProps;
+
+          if (!material.userData.originalProps) {
+            originalProps = material.userData.originalProps = {
+              opacity: material.opacity,
+              transparent: material.transparent,
+              format: material.format,
+              blending: material.blending,
+              side: material.side
+            };
+          }
+
+          // Note: Sharing materials will cause all objects with the material to turn transparent / opaque
+          // This is generally fine for avatars since a material will only be shared within a glTF model,
+          // not across avatars in the room.
+          material.opacity = invading ? this.data.invadingOpacity : originalProps.opacity;
+          material.transparent = invading || originalProps.transparent;
+
+          // Note: Since ThreeJS 0.132 the default format for GLTF imported opaque materials is RGBFormat
+          // so we need to switch before enabling transparency.
+          material.format = invading ? THREE.RGBAFormat : originalProps.format;
+          material.blending = invading ? THREE.NormalBlending : originalProps.blending;
+          // This shouldn't be necessary but for some reason transparency doens't work on some models if they are single sided.
+          material.side = invading ? THREE.DoubleSide : originalProps.side;
+        });
       });
     } else {
       this.el.object3D.visible = !invading && !this.alwaysHidden;

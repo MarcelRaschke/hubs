@@ -1,21 +1,22 @@
-import "three/examples/js/pmrem/PMREMGenerator";
-import "three/examples/js/pmrem/PMREMCubeUVPacker";
-import qsTruthy from "../utils/qs_truthy";
-const isBotMode = qsTruthy("bot");
+import { LightProbeGenerator } from "three/examples/jsm/lights/LightProbeGenerator";
 
 const {
-  Scene,
-  CubeCamera,
-  Object3D,
-  Vector3,
-  BoxBufferGeometry,
-  ShaderMaterial,
-  UniformsUtils,
+  AmbientLight,
   BackSide,
+  BoxBufferGeometry,
+  CubeCamera,
+  LinearFilter,
   Mesh,
-  UniformsLib,
+  Object3D,
   PMREMGenerator,
-  PMREMCubeUVPacker
+  RGBAFormat,
+  Scene,
+  ShaderMaterial,
+  sRGBEncoding,
+  UniformsLib,
+  UniformsUtils,
+  Vector3,
+  WebGLCubeRenderTarget
 } = THREE;
 
 /**
@@ -248,10 +249,6 @@ export default class Sky extends Object3D {
       fog: true
     });
 
-    this.skyScene = new Scene();
-    this.cubeCamera = new CubeCamera(1, 100000, 512);
-    this.skyScene.add(this.cubeCamera);
-
     this.sky = new Mesh(Sky._geometry, material);
     this.sky.name = "Sky";
     this.add(this.sky);
@@ -333,7 +330,7 @@ export default class Sky extends Object3D {
     const theta = Math.PI * (this._inclination - 0.5);
     const phi = 2 * Math.PI * (this._azimuth - 0.5);
 
-    const distance = this._distance;
+    const distance = Math.min(1000, this._distance);
 
     const x = distance * Math.cos(phi);
     const y = distance * Math.sin(phi) * Math.sin(theta);
@@ -344,19 +341,43 @@ export default class Sky extends Object3D {
   }
 
   generateEnvironmentMap(renderer) {
-    this.skyScene.add(this.sky);
-    this.cubeCamera.update(renderer, this.skyScene);
+    const skyScene = new Scene();
+    const cubeCamera = new CubeCamera(1, 100000, new WebGLCubeRenderTarget(512));
+    skyScene.add(cubeCamera);
+    skyScene.add(this.sky);
+    cubeCamera.update(renderer, skyScene);
     this.add(this.sky);
-    const vrEnabled = renderer.vr.enabled;
-    renderer.vr.enabled = false;
-    const pmremGenerator = new PMREMGenerator(this.cubeCamera.renderTarget.texture);
-    pmremGenerator.update(renderer);
-    const pmremCubeUVPacker = new PMREMCubeUVPacker(pmremGenerator.cubeLods);
-    pmremCubeUVPacker.update(renderer);
-    renderer.vr.enabled = vrEnabled;
+    const vrEnabled = renderer.xr.enabled;
+    renderer.xr.enabled = false;
+    const pmremGenerator = new PMREMGenerator(renderer);
+    const envMap = pmremGenerator.fromCubemap(cubeCamera.renderTarget.texture).texture;
+    renderer.xr.enabled = vrEnabled;
     pmremGenerator.dispose();
-    pmremCubeUVPacker.dispose();
-    return pmremCubeUVPacker.CubeUVRenderTarget.texture;
+    cubeCamera.renderTarget.dispose();
+    return envMap;
+  }
+
+  generateLightProbe(renderer) {
+    const skyScene = new Scene();
+    skyScene.add(this.sky);
+
+    const cubeCamera = new CubeCamera(
+      1,
+      100000,
+      new WebGLCubeRenderTarget(512, {
+        format: RGBAFormat,
+        magFilter: LinearFilter,
+        minFilter: LinearFilter,
+        encoding: sRGBEncoding
+      })
+    );
+    skyScene.add(cubeCamera);
+    skyScene.add(this.sky);
+    cubeCamera.update(renderer, skyScene);
+    this.add(this.sky);
+    const lightProbe = LightProbeGenerator.fromCubeRenderTarget(renderer, cubeCamera.renderTarget);
+    cubeCamera.renderTarget.dispose();
+    return lightProbe;
   }
 
   copy(source, recursive = true) {
@@ -401,14 +422,7 @@ AFRAME.registerComponent("skybox", {
 
   init() {
     this.sky = new Sky();
-    this.sky.cubeCamera.children.forEach(o => (o.matrixNeedsUpdate = true));
     this.el.setObject3D("mesh", this.sky);
-
-    this.updateEnvironmentMap = this.updateEnvironmentMap.bind(this);
-    // HACK: Render environment map on next frame to avoid bug where the render target texture is black.
-    // This is likely due to the custom elements attached callback being synchronous on Chrome but not Firefox.
-    // Added timeout due to additional case where texture is black in Firefox.
-    requestAnimationFrame(() => setTimeout(this.updateEnvironmentMap));
   },
 
   update(oldData) {
@@ -451,17 +465,18 @@ AFRAME.registerComponent("skybox", {
       this.sky.matrixNeedsUpdate = true;
     }
 
-    this.updateEnvironmentMap();
-  },
-
-  updateEnvironmentMap() {
-    const environmentMapComponent = this.el.sceneEl.components["environment-map"];
-
-    if (environmentMapComponent && !isBotMode) {
-      const renderer = this.el.sceneEl.renderer;
-      const envMap = this.sky.generateEnvironmentMap(renderer);
-      environmentMapComponent.updateEnvironmentMap(envMap);
+    // TODO Remove or rework medium quality mode
+    if (window.APP.store.state.preferences.materialQualitySetting === "medium") {
+      // This extra ambient light is here to normalize lighting with the MeshStandardMaterial.
+      // Without it, objects are significantly darker in brighter environments.
+      // It's kept to a low value to not wash out objects in very dark environments.
+      // This is a hack, but the results are much better than they are without it.
+      this.el.setObject3D("ambient-light", new AmbientLight(0xffffff, 0.3));
+      this.el.setObject3D("light-probe", this.sky.generateLightProbe(this.el.sceneEl.renderer));
     }
+
+    // TODO if we care about dynamic skybox changes we should also update the enviornment map here
+    //
   },
 
   remove() {

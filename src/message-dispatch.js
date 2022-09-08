@@ -1,25 +1,55 @@
 import "./utils/configs";
 import { getAbsoluteHref } from "./utils/media-url-utils";
 import { isValidSceneUrl } from "./utils/scene-url-utils";
-import { messages } from "./utils/i18n";
 import { spawnChatMessage } from "./react-components/chat-message";
-import { SOUND_QUACK, SOUND_SPECIAL_QUACK } from "./systems/sound-effects-system";
+import { SOUND_CHAT_MESSAGE, SOUND_QUACK, SOUND_SPECIAL_QUACK } from "./systems/sound-effects-system";
 import ducky from "./assets/models/DuckyMesh.glb";
+import { EventTarget } from "event-target-shim";
+import { ExitReason } from "./react-components/room/ExitedRoomScreen";
+import { LogMessageType } from "./react-components/room/ChatSidebar";
+import { createNetworkedEntity } from "./systems/netcode";
 
 let uiRoot;
 // Handles user-entered messages
-export default class MessageDispatch {
-  constructor(scene, entryManager, hubChannel, addToPresenceLog, remountUI, mediaSearchStore) {
+export default class MessageDispatch extends EventTarget {
+  constructor(scene, entryManager, hubChannel, remountUI, mediaSearchStore) {
+    super();
     this.scene = scene;
     this.entryManager = entryManager;
     this.hubChannel = hubChannel;
-    this.addToPresenceLog = addToPresenceLog;
     this.remountUI = remountUI;
     this.mediaSearchStore = mediaSearchStore;
+    this.presenceLogEntries = [];
   }
 
-  log = body => {
-    this.addToPresenceLog({ type: "log", body });
+  addToPresenceLog(entry) {
+    entry.key = Date.now().toString();
+
+    this.presenceLogEntries.push(entry);
+    this.remountUI({ presenceLogEntries: this.presenceLogEntries });
+    if (entry.type === "chat" && this.scene.is("loaded")) {
+      this.scene.systems["hubs-systems"].soundEffectsSystem.playSoundOneShot(SOUND_CHAT_MESSAGE);
+    }
+
+    // Fade out and then remove
+    setTimeout(() => {
+      entry.expired = true;
+      this.remountUI({ presenceLogEntries: this.presenceLogEntries });
+
+      setTimeout(() => {
+        this.presenceLogEntries.splice(this.presenceLogEntries.indexOf(entry), 1);
+        this.remountUI({ presenceLogEntries: this.presenceLogEntries });
+      }, 5000);
+    }, 20000);
+  }
+
+  receive(message) {
+    this.addToPresenceLog(message);
+    this.dispatchEvent(new CustomEvent("message", { detail: message }));
+  }
+
+  log = (messageType, props) => {
+    this.receive({ type: "log", messageType, props });
   };
 
   dispatch = message => {
@@ -37,8 +67,9 @@ export default class MessageDispatch {
     uiRoot = uiRoot || document.getElementById("ui-root");
     const isGhost = !entered && uiRoot && uiRoot.firstChild && uiRoot.firstChild.classList.contains("isGhost");
 
+    // TODO: Some of the commands below should be available without requiring room entry.
     if (!entered && (!isGhost || command === "duck")) {
-      this.addToPresenceLog({ type: "log", body: "You must enter the room to use this command." });
+      this.log(LogMessageType.roomEntryRequired);
       return;
     }
 
@@ -53,10 +84,10 @@ export default class MessageDispatch {
       case "fly":
         if (this.scene.systems["hubs-systems"].characterController.fly) {
           this.scene.systems["hubs-systems"].characterController.enableFly(false);
-          this.addToPresenceLog({ type: "log", body: "Fly mode disabled." });
+          this.log(LogMessageType.flyModeDisabled);
         } else {
           if (this.scene.systems["hubs-systems"].characterController.enableFly(true)) {
-            this.addToPresenceLog({ type: "log", body: "Fly mode enabled." });
+            this.log(LogMessageType.flyModeEnabled);
           }
         }
         break;
@@ -74,6 +105,7 @@ export default class MessageDispatch {
         for (let i = scales.length - 1; i >= 0; i--) {
           if (curScale.x > scales[i]) {
             avatarRig.object3D.scale.set(scales[i], scales[i], scales[i]);
+            avatarRig.object3D.matrixNeedsUpdate = true;
             break;
           }
         }
@@ -81,7 +113,7 @@ export default class MessageDispatch {
         break;
       case "leave":
         this.entryManager.exitScene();
-        this.remountUI({ roomUnavailableReason: "left" });
+        this.remountUI({ roomUnavailableReason: ExitReason.left });
         break;
       case "duck":
         spawnChatMessage(getAbsoluteHref(location.href, ducky));
@@ -91,6 +123,14 @@ export default class MessageDispatch {
           this.scene.systems["hubs-systems"].soundEffectsSystem.playSoundOneShot(SOUND_QUACK);
         }
         break;
+      case "cube": {
+        const avatarPov = document.querySelector("#avatar-pov-node").object3D;
+        const eid = createNetworkedEntity(APP.world, "cube");
+        const obj = APP.world.eid2obj.get(eid);
+        obj.position.copy(avatarPov.localToWorld(new THREE.Vector3(0, 0, -1.5)));
+        obj.lookAt(avatarPov.getWorldPosition(new THREE.Vector3()));
+        break;
+      }
       case "debug":
         physicsSystem = document.querySelector("a-scene").systems["hubs-systems"].physicsSystem;
         physicsSystem.setDebug(!physicsSystem.debugEnabled);
@@ -103,10 +143,10 @@ export default class MessageDispatch {
           if (await isValidSceneUrl(args[0])) {
             err = this.hubChannel.updateScene(args[0]);
             if (err === "unauthorized") {
-              this.addToPresenceLog({ type: "log", body: "You do not have permission to change the scene." });
+              this.log(LogMessageType.unauthorizedSceneChange);
             }
           } else {
-            this.addToPresenceLog({ type: "log", body: messages["invalid-scene-url"] });
+            this.log(LogMessageType.inalidSceneUrl);
           }
         } else if (this.hubChannel.canOrWillIfCreator("update_hub")) {
           this.mediaSearchStore.sourceNavigateWithNoNav("scenes", "use");
@@ -116,27 +156,49 @@ export default class MessageDispatch {
       case "rename":
         err = this.hubChannel.rename(args.join(" "));
         if (err === "unauthorized") {
-          this.addToPresenceLog({ type: "log", body: "You do not have permission to rename this room." });
+          this.log(LogMessageType.unauthorizedRoomRename);
         }
         break;
       case "capture":
         if (!captureSystem.available()) {
-          this.log("Capture unavailable.");
+          this.log(LogMessageType.captureUnavailable);
           break;
         }
         if (args[0] === "stop") {
           if (captureSystem.started()) {
             captureSystem.stop();
-            this.log("Capture stopped.");
+            this.log(LogMessageType.captureStopped);
           } else {
-            this.log("Capture already stopped.");
+            this.log(LogMessageType.captureAlreadyStopped);
           }
         } else {
           if (captureSystem.started()) {
-            this.log("Capture already running.");
+            this.log(LogMessageType.captureAlreadyRunning);
           } else {
             captureSystem.start();
-            this.log("Capture started.");
+            this.log(LogMessageType.captureStarted);
+          }
+        }
+        break;
+      case "audioNormalization":
+        {
+          if (args.length === 1) {
+            const factor = Number(args[0]);
+            if (!isNaN(factor)) {
+              const effectiveFactor = Math.max(0.0, Math.min(255.0, factor));
+              window.APP.store.update({
+                preferences: { audioNormalization: effectiveFactor }
+              });
+              if (factor) {
+                this.log(LogMessageType.setAudioNormalizationFactor, { factor: effectiveFactor });
+              } else {
+                this.log(LogMessageType.audioNormalizationDisabled);
+              }
+            } else {
+              this.log(LogMessageType.audioNormalizationNaN);
+            }
+          } else {
+            this.log(LogMessageType.invalidAudioNormalizationRange);
           }
         }
         break;

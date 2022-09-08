@@ -28,7 +28,7 @@ const rotatePitchAndYaw = (function() {
     q.copy(owq)
       .premultiply(pq)
       .premultiply(yq)
-      .premultiply(opq.inverse());
+      .premultiply(opq.invert());
     v.set(0, 1, 0).applyQuaternion(q);
     const newUpDot = v.dot(UP);
     v.set(0, 0, 1).applyQuaternion(q);
@@ -64,7 +64,7 @@ AFRAME.registerComponent("pitch-yaw-rotator", {
       scenePreviewNode = scenePreviewNode || document.getElementById("scene-preview-node");
       const lobby = !scene.is("entered");
       const isGhost = lobby && uiRoot && uiRoot.firstChild && uiRoot.firstChild.classList.contains("isGhost");
-      const cameraDelta = userinput.get(lobby ? paths.actions.cameraDelta : paths.actions.lobbyCameraDelta);
+      const cameraDelta = userinput.get(lobby ? paths.actions.lobbyCameraDelta : paths.actions.cameraDelta);
       if (cameraDelta) {
         rotatePitchAndYaw(
           lobby && !isGhost ? scenePreviewNode.object3D : this.el.object3D,

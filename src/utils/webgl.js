@@ -1,7 +1,7 @@
 const THREE = AFRAME.THREE;
 
 function checkFloatTextureSupport() {
-  const renderer = new THREE.WebGLRenderer();
+  const renderer = new THREE.WebGLRenderer({ forceWebVR: true });
 
   const scene = new THREE.Scene();
   const size = 2;
@@ -12,7 +12,7 @@ function checkFloatTextureSupport() {
   scene.add(box);
 
   renderer.render(scene, new THREE.Camera());
-  const result = renderer.context.getError() === 0;
+  const result = renderer.getContext().getError() === 0;
   renderer.dispose();
   return result;
 }
@@ -33,4 +33,9 @@ export function patchWebGLRenderingContext() {
       return originalGetExtension.call(this, name);
     };
   }
+}
+
+export function getWebGLVersion(renderer) {
+  const gl = renderer.getContext();
+  return gl.getParameter(gl.VERSION).split(" ")[1];
 }

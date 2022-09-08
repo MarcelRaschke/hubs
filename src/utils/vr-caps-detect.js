@@ -1,3 +1,5 @@
+import { isIOS } from "./is-mobile";
+
 const { detect } = require("detect-browser");
 
 const browser = detect();
@@ -18,9 +20,9 @@ function isMaybeDaydreamCompatibleDevice(ua) {
   return /\WAndroid\W/.test(ua);
 }
 
-// Blacklist of VR device name regex matchers that we do not want to consider as valid VR devices
+// Disallowed list of VR device name regex matchers that we do not want to consider as valid VR devices
 // that can be entered into as a "generic" entry flow.
-const GENERIC_ENTRY_TYPE_DEVICE_BLACKLIST = [/cardboard/i];
+const GENERIC_ENTRY_TYPE_DISALLOWED_DEVICES = [/cardboard/i];
 
 // Tries to determine VR entry compatibility regardless of the current browser.
 //
@@ -50,9 +52,10 @@ export async function getAvailableVREntryTypes() {
   // This needs to be kept up-to-date with the latest browsers that can support VR and Hubs.
   // Checking for navigator.getVRDisplays always passes b/c of polyfill.
   const isWebVRCapableBrowser = window.hasNativeWebVRImplementation;
+  const isWebXRCapableBrowser = window.hasNativeWebXRImplementation;
 
   const isDaydreamCapableBrowser = !!(isWebVRCapableBrowser && browser.name === "chrome" && !isSamsungBrowser);
-  const isIDevice = AFRAME.utils.device.isIOS();
+  const isIDevice = isIOS();
   const isFirefoxBrowser = browser.name === "firefox";
   const isUIWebView = typeof navigator.mediaDevices === "undefined";
 
@@ -85,9 +88,8 @@ export async function getAvailableVREntryTypes() {
       : VR_DEVICE_AVAILABILITY.yes;
 
   // HACK -- we prompt the user to install firefox if they click the VR button on a non-WebVR compatible
-  // browser. once we change this (ie when Chrome has VR support) then this check can be removed. Without this
-  // check if you have FF on Mac/Linux you'll get the confusing flow of having a VR button but then
-  // being asked to download FF.
+  // browser. Without this check if you have FF on Mac/Linux you'll get the confusing flow of having a
+  // VR button but then being asked to download FF.
   const isNonWebVRFirefox = !isWebVRCapableBrowser && isFirefoxBrowser;
   let generic = isMobile || isNonWebVRFirefox ? VR_DEVICE_AVAILABILITY.no : VR_DEVICE_AVAILABILITY.maybe;
   let cardboard = VR_DEVICE_AVAILABILITY.no;
@@ -113,9 +115,9 @@ export async function getAvailableVREntryTypes() {
       : VR_DEVICE_AVAILABILITY.no;
 
   if (isWebVRCapableBrowser) {
-    // Generic is supported for non-blacklisted devices and presentable HMDs.
+    // Generic is supported for allowed devices and presentable HMDs.
     generic = displays.find(
-      d => d.capabilities.canPresent && !GENERIC_ENTRY_TYPE_DEVICE_BLACKLIST.find(r => r.test(d.displayName))
+      d => d.capabilities.canPresent && !GENERIC_ENTRY_TYPE_DISALLOWED_DEVICES.find(r => r.test(d.displayName))
     )
       ? VR_DEVICE_AVAILABILITY.yes
       : VR_DEVICE_AVAILABILITY.no;
@@ -133,5 +135,18 @@ export async function getAvailableVREntryTypes() {
     }
   }
 
+  if (isWebXRCapableBrowser) {
+    generic = true;
+  }
+
   return { screen, generic, gearvr, daydream, cardboard, safari };
 }
+
+export const ONLY_SCREEN_AVAILABLE = {
+  screen: VR_DEVICE_AVAILABILITY.yes,
+  generic: VR_DEVICE_AVAILABILITY.no,
+  gearvr: VR_DEVICE_AVAILABILITY.no,
+  daydream: VR_DEVICE_AVAILABILITY.no,
+  cardboard: VR_DEVICE_AVAILABILITY.no,
+  safari: VR_DEVICE_AVAILABILITY.no
+};

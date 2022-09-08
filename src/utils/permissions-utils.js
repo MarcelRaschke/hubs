@@ -1,4 +1,8 @@
 // Brief overview of client authorization can be found in the wiki:
+
+import { hasComponent } from "bitecs";
+import { HoldableButton } from "../bit-components";
+
 // https://github.com/mozilla/hubs/wiki/Hubs-authorization
 export function showHoverEffect(el) {
   const isFrozen = el.sceneEl.is("frozen");
@@ -17,20 +21,17 @@ export function showHoverEffect(el) {
 export function canMove(entity) {
   const isPinned = entity.components.pinnable && entity.components.pinnable.data.pinned;
   const networkedTemplate = entity && entity.components.networked && entity.components.networked.data.template;
-  const isCamera = networkedTemplate === "#interactable-camera";
   const isPen = networkedTemplate === "#interactable-pen";
   const spawnerTemplate =
     entity && entity.components["super-spawner"] && entity.components["super-spawner"].data.template;
   const isEmojiSpawner = spawnerTemplate === "#interactable-emoji";
   const isEmoji = !!entity.components.emoji;
-  const isHoldableButton = entity.components.tags && entity.components.tags.data.holdableButton;
   return (
-    isHoldableButton ||
+    hasComponent(APP.world, HoldableButton, entity.eid) ||
     ((isEmoji || isEmojiSpawner
       ? window.APP.hubChannel.can("spawn_emoji")
       : window.APP.hubChannel.can("spawn_and_move_media")) &&
       (!isPinned || window.APP.hubChannel.can("pin_objects")) &&
-      (!isCamera || window.APP.hubChannel.can("spawn_camera")) &&
       (!isPen || window.APP.hubChannel.can("spawn_drawing")))
   );
 }
@@ -86,7 +87,7 @@ function authorizeEntityManipulation(entityMetadata, sender, senderPermissions) 
   const { template, creator, isPinned } = entityMetadata;
   const isCreator = sender === creator;
 
-  if (template.endsWith("-waypoint-avatar")) {
+  if (template.endsWith("-waypoint-avatar") || template.endsWith("-media-frame")) {
     return true;
   } else if (template.endsWith("-avatar")) {
     return isCreator;
@@ -107,6 +108,12 @@ function getPendingOrExistingEntityMetadata(networkId) {
   const pendingData = NAF.connection.adapter.getPendingDataForNetworkId(networkId);
 
   if (pendingData) {
+    if (pendingData.owner) {
+      // If owner is no longer present, give up.
+      const presenceState = window.APP.hubChannel.presence.state[pendingData.owner];
+      if (!presenceState) return;
+    }
+
     const { template, creator } = pendingData;
     const schema = NAF.schemas.schemaDict[template];
     const pinnableComponent = pendingData.components[indexForComponent("pinnable", schema)];
@@ -226,9 +233,8 @@ export function authorizeOrSanitizeMessage(message) {
   }
 }
 
-const PHOENIX_RELIABLE_NAF = "phx-reliable";
 export function applyPersistentSync(networkId) {
   if (!persistentSyncs[networkId]) return;
-  NAF.connection.adapter.onData(authorizeOrSanitizeMessage(persistentSyncs[networkId]), PHOENIX_RELIABLE_NAF);
+  NAF.connection.adapter.handleIncomingNAF(persistentSyncs[networkId]);
   delete persistentSyncs[networkId];
 }

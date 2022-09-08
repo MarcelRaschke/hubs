@@ -13,8 +13,13 @@ AFRAME.registerComponent("in-world-hud", {
     this.inviteBtn = this.el.querySelector(".invite-btn");
     this.background = this.el.querySelector(".bg");
 
+    this.onMicStateChanged = () => {
+      this.mic.setAttribute("mic-button", "active", APP.dialog.isMicEnabled);
+    };
+    APP.dialog.on("mic-state-changed", this.onMicStateChanged);
+
     this.updateButtonStates = () => {
-      this.mic.setAttribute("mic-button", "active", this.el.sceneEl.is("muted"));
+      this.mic.setAttribute("mic-button", "active", APP.dialog.isMicEnabled);
       this.pen.setAttribute("icon-button", "active", this.el.sceneEl.is("pen"));
       this.cameraBtn.setAttribute("icon-button", "active", this.el.sceneEl.is("camera"));
       if (window.APP.hubChannel) {
@@ -25,13 +30,12 @@ AFRAME.registerComponent("in-world-hud", {
     };
 
     this.onStateChange = evt => {
-      if (!(evt.detail === "muted" || evt.detail === "frozen" || evt.detail === "pen" || evt.detail === "camera"))
-        return;
+      if (!(evt.detail === "frozen" || evt.detail === "pen" || evt.detail === "camera")) return;
       this.updateButtonStates();
     };
 
     this.onMicClick = () => {
-      this.el.emit("action_mute");
+      APP.mediaDevicesManager.toggleMic();
     };
 
     this.onSpawnClick = () => {
@@ -53,12 +57,17 @@ AFRAME.registerComponent("in-world-hud", {
     this.onInviteClick = () => {
       this.el.emit("action_invite");
     };
+
+    this.onHubUpdated = e => {
+      this.inviteBtn.object3D.visible = e.detail.hub.entry_mode !== "invite";
+    };
   },
 
   play() {
     this.el.sceneEl.addEventListener("stateadded", this.onStateChange);
     this.el.sceneEl.addEventListener("stateremoved", this.onStateChange);
     this.el.sceneEl.systems.permissions.onPermissionsUpdated(this.updateButtonStates);
+    this.el.sceneEl.addEventListener("hub_updated", this.onHubUpdated);
     this.updateButtonStates();
 
     this.mic.object3D.addEventListener("interact", this.onMicClick);
@@ -72,6 +81,7 @@ AFRAME.registerComponent("in-world-hud", {
     this.el.sceneEl.removeEventListener("stateadded", this.onStateChange);
     this.el.sceneEl.removeEventListener("stateremoved", this.onStateChange);
     window.APP.hubChannel.removeEventListener("permissions_updated", this.updateButtonStates);
+    this.el.sceneEl.removeEventListener("hub_updated", this.onHubUpdated);
 
     this.mic.object3D.removeEventListener("interact", this.onMicClick);
     this.spawn.object3D.removeEventListener("interact", this.onSpawnClick);

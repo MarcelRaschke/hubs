@@ -18,13 +18,11 @@
     - [player-info](#components/avatar/player-info)
     - [spawn-controller](#components/avatar/spawn-controller)
   - [avatar/personal-space-bubble](#components/avatar/personal-space-bubble)
-    - [space-invader-mesh](#components/avatar/personal-space-bubble/space-invader-mesh)
     - [personal-space-invader](#components/avatar/personal-space-bubble/personal-space-invader)
     - [personal-space-bubble](#components/avatar/personal-space-bubble/personal-space-bubble)
   - [environment](#components/environment)
     - [hide-when-quality](#components/environment/hide-when-quality)
     - [layers](#components/environment/layers)
-    - [nav-mesh-helper](#components/environment/nav-mesh-helper)
     - [scene-shadow](#components/environment/scene-shadow)
     - [spawn-point](#components/environment/spawn-point)
   - [gltf](#components/gltf)
@@ -348,7 +346,7 @@ Instantiates GLTF models as specified in a bundle JSON.
 <a name="components/gltf/gltf-model-plus"></a>
 #### gltf-model-plus
 
-Loads a GLTF model, optionally recursively "inflates" the child nodes of a model into a-entities and sets whitelisted components on them if defined in the node's extras.
+Loads a GLTF model, optionally recursively "inflates" the child nodes of a model into a-entities and sets allowed components on them if defined in the node's extras.
 
 `src/components/gltf-model-plus.js`
           
@@ -371,14 +369,6 @@ Hides entities based on the scene's quality mode
 Sets layer flags on the underlying Object3D
 
 `src/components/layers.js`
-          
-
-<a name="components/environment/nav-mesh-helper"></a>
-#### nav-mesh-helper
-
-Initializes teleporters when the environment bundle has loaded.
-
-`src/components/nav-mesh-helper.js`
           
 
 <a name="components/environment/scene-shadow"></a>
@@ -471,14 +461,6 @@ Toggle the isPlaying state of a component based on app mode
 
 <a name="components/avatar/personal-space-bubble"></a>
 ### avatar/personal-space-bubble
-      
-<a name="components/avatar/personal-space-bubble/space-invader-mesh"></a>
-#### space-invader-mesh
-
-Specifies a mesh associated with an invader.
-
-`src/systems/personal-space-bubble.js`
-          
 
 <a name="components/avatar/personal-space-bubble/personal-space-invader"></a>
 #### personal-space-invader
